@@ -34,14 +34,8 @@ sample_indices2, sample_values2 = read_signal(file_path2)
 
 # requirement 2 visualize the signals
 def visualize_signal(sample_indices, sample_values):
-    interpolator = interp1d(sample_indices, sample_values, kind='cubic')
-
-    smooth_indices = np.linspace(min(sample_indices), max(sample_indices), 500)
-    smooth_values = interpolator(smooth_indices)
-
     plt.figure(figsize=(10, 6))
-    plt.plot(smooth_indices, smooth_values, color='b', label='Signal')  # Smooth curve
-    plt.scatter(sample_indices, sample_values, color='red', marker='o')  # Original sample points for reference
+    plt.plot(sample_indices, sample_values, marker='o', linestyle='-', color='b', label='Signal')
 
     plt.title("Signal Visualization")
     plt.xlabel("Sample Index")
