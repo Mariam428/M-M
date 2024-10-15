@@ -65,6 +65,9 @@ def addSignals(sample_indices1, sample_values1, sample_indices2, sample_values2)
 
         result_values.append(value1 + value2)
 
+    print("Result Indices (Addition):", result_indices)
+    print("Result Values (Addition):", result_values)
+
     return result_indices, result_values
 
 
@@ -78,6 +81,9 @@ def multiplySignal(sample_indices, sample_values, const):
         # Multiply each value by the constant and append to result_values
         result_values.append(const * sample_values[i])
 
+    print("Result Indices (Multiplication):", result_indices)
+    print("Result Values (Multiplication):", result_values)
+
     return result_indices, result_values
 
 
@@ -86,6 +92,8 @@ def subtractSignals(sample_indices1, sample_values1, sample_indices2, sample_val
     sample_indices3, sample_values3 = multiplySignal(sample_indices2, sample_values2, -1)
     result_indices, result_values = addSignals(sample_indices1, sample_values1,sample_indices3, sample_values3)
 
+    print("Result Indices (Subtraction):", result_indices)
+    print("Result Values (Subtraction):", result_values)
     return result_indices, result_values
 
 # delaying a signal
@@ -93,6 +101,9 @@ def subtractSignals(sample_indices1, sample_values1, sample_indices2, sample_val
 def delayingSignals(sample_indices1, sample_values1,const):
     result_indices = list(range((sample_indices1[0]+const), sample_indices1[-1]+const +1))
     result_values = sample_values1
+
+    print("Result Indices (Delay):", result_indices)
+    print("Result Values (Delay):", result_values)
 
     return result_indices, result_values
 
@@ -102,6 +113,9 @@ def delayingSignals(sample_indices1, sample_values1,const):
 def advancingSignals(sample_indices1, sample_values1, const):
     result_indices = list(range((sample_indices1[0]-const), sample_indices1[-1]-const+1))
     result_values = sample_values1
+
+    print("Result Indices (Advance):", result_indices)
+    print("Result Values (Advance):", result_values)
 
     return result_indices, result_values
 
@@ -114,6 +128,9 @@ def foldingSignals(sample_indices1, sample_values1):
 
     for value in reversed(sample_values1):
         result_values.append(value)
+
+    print("Result Indices (Folding):", result_indices)
+    print("Result Values (Folding):", result_values)
 
     return result_indices, result_values
 
