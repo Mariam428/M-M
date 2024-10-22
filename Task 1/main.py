@@ -33,11 +33,22 @@ sample_indices2, sample_values2 = read_signal(file_path2)
 
 
 # requirement 2 visualize the signals
-def visualize_signal(sample_indices, sample_values):
+def visualize_continuous_signal(sample_indices, sample_values):
     plt.figure(figsize=(10, 6))
-    plt.plot(sample_indices, sample_values, marker='o', linestyle='-', color='b', label='Signal')
+    plt.plot(sample_indices, sample_values, marker='o', linestyle='-', color='b', label='Continuous Signal')
 
     plt.title("Signal Visualization")
+    plt.xlabel("Sample Index")
+    plt.ylabel("Sample Value")
+    plt.grid(True)
+    plt.legend()
+    plt.show()
+
+def visualize_discrete_signal(sample_indices, sample_values):
+    plt.figure(figsize=(10, 6))
+    plt.stem(sample_indices, sample_values, linefmt='b-', markerfmt='bo', basefmt='r-', label='Discrete Signal')
+
+    plt.title("Discrete Signal Visualization")
     plt.xlabel("Sample Index")
     plt.ylabel("Sample Value")
     plt.grid(True)
@@ -141,7 +152,7 @@ def load_signal():
     if file_path:
         global sample_indices1, sample_values1
         sample_indices1, sample_values1 = read_signal(file_path)
-        visualize_signal(sample_indices1, sample_values1)
+        visualize_continuous_signal(sample_indices1, sample_values1)
     else:
         messagebox.showerror("Error", "No file selected")
 
@@ -150,36 +161,36 @@ def load_second_signal():
     if file_path:
         global sample_indices2, sample_values2
         sample_indices2, sample_values2 = read_signal(file_path)
-        visualize_signal(sample_indices2, sample_values2)
+        visualize_continuous_signal(sample_indices2, sample_values2)
     else:
         messagebox.showerror("Error", "No file selected")
 
 def add_signals_gui():
     result_indices, result_values = addSignals(sample_indices1, sample_values1, sample_indices2, sample_values2)
-    visualize_signal(result_indices, result_values)
+    visualize_continuous_signal(result_indices, result_values)
 
 def subtract_signals_gui():
     result_indices, result_values = subtractSignals(sample_indices1, sample_values1, sample_indices2, sample_values2)
-    visualize_signal(result_indices, result_values)
+    visualize_continuous_signal(result_indices, result_values)
 
 def multiply_signal_gui():
     const = float(entry_const.get())
     result_indices, result_values = multiplySignal(sample_indices1, sample_values1, const)
-    visualize_signal(result_indices, result_values)
+    visualize_continuous_signal(result_indices, result_values)
 
 def delay_signal_gui():
     const = int(entry_const.get())
     result_indices, result_values = delayingSignals(sample_indices1, sample_values1, const)
-    visualize_signal(result_indices, result_values)
+    visualize_continuous_signal(result_indices, result_values)
 
 def advance_signal_gui():
     const = int(entry_const.get())
     result_indices, result_values = advancingSignals(sample_indices1, sample_values1, const)
-    visualize_signal(result_indices, result_values)
+    visualize_continuous_signal(result_indices, result_values)
 
 def fold_signal_gui():
     result_indices, result_values = foldingSignals(sample_indices1, sample_values1)
-    visualize_signal(result_indices, result_values)
+    visualize_continuous_signal(result_indices, result_values)
 
 # Tkinter GUI Setup
 root = Tk()
