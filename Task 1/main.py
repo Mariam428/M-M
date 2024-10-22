@@ -153,7 +153,7 @@ def generate_signal(signal_type, amplitude, phase_shift, Fmax, Fs, duration=1.0)
         raise ValueError(
             "Fs >= 2 * Fmax")
 
-    t = np.arange(0, duration, 1 / Fs)  # Time vector based on sampling frequency
+    t = np.arange(0, duration, 1 / Fs)
 
     if signal_type == 'sine':
         signal = amplitude * np.sin(2 * np.pi * Fmax * t + phase_shift)
@@ -161,6 +161,7 @@ def generate_signal(signal_type, amplitude, phase_shift, Fmax, Fs, duration=1.0)
         signal = amplitude * np.cos(2 * np.pi * Fmax * t + phase_shift)
 
     return t, signal
+
 
 # GUI Functions
 def load_signal():
@@ -208,6 +209,65 @@ def fold_signal_gui():
     result_indices, result_values = foldingSignals(sample_indices1, sample_values1)
     visualize_continuous_signal(result_indices, result_values)
 
+def open_signal_generation_menu():
+    # Create a new top-level window for signal generation
+    signal_window = Toplevel(root)
+    signal_window.title("Signal Generation")
+
+    # Input fields for signal parameters
+    Label(signal_window, text="Amplitude:").grid(row=0, column=0, padx=10, pady=10)
+    amplitude_entry = Entry(signal_window)
+    amplitude_entry.grid(row=0, column=1, padx=10, pady=10)
+
+    Label(signal_window, text="Phase Shift:").grid(row=1, column=0, padx=10, pady=10)
+    phase_shift_entry = Entry(signal_window)
+    phase_shift_entry.grid(row=1, column=1, padx=10, pady=10)
+
+    Label(signal_window, text="Fmax:").grid(row=2, column=0, padx=10, pady=10)
+    fmax_entry = Entry(signal_window)
+    fmax_entry.grid(row=2, column=1, padx=10, pady=10)
+
+    Label(signal_window, text="Fs:").grid(row=3, column=0, padx=10, pady=10)
+    fs_entry = Entry(signal_window)
+    fs_entry.grid(row=3, column=1, padx=10, pady=10)
+
+    Label(signal_window, text="Duration:").grid(row=4, column=0, padx=10, pady=10)
+    duration_entry = Entry(signal_window)
+    duration_entry.grid(row=4, column=1, padx=10, pady=10)
+
+    # Function to generate signal based on user input
+    def generate_selected_signal(signal_type):
+        try:
+            amplitude = float(amplitude_entry.get())
+            phase_shift = float(phase_shift_entry.get())
+            Fmax = float(fmax_entry.get())
+            Fs = float(fs_entry.get())
+            duration = float(duration_entry.get())
+            t, signal = generate_signal(signal_type, amplitude, phase_shift, Fmax, Fs, duration)
+            return t, signal
+        except ValueError:
+            messagebox.showerror("Error", "Please enter valid numeric values for all fields")
+
+    # Function to visualize continuous signal
+    def generate_continuous():
+        t, signal = generate_selected_signal(selected_signal_type.get())
+        visualize_continuous_signal(t, signal)
+
+    # Function to visualize discrete signal
+    def generate_discrete():
+        t, signal = generate_selected_signal(selected_signal_type.get())
+        visualize_discrete_signal(t, signal)
+
+    # Create a variable to store the selected signal type
+    selected_signal_type = StringVar(signal_window, "sine")
+
+    # Buttons for sine, cosine, and visualization
+    Button(signal_window, text="Sine", command=lambda: selected_signal_type.set("sine")).grid(row=5, column=0, padx=10, pady=10)
+    Button(signal_window, text="Cosine", command=lambda: selected_signal_type.set("cosine")).grid(row=5, column=1, padx=10, pady=10)
+
+    Button(signal_window, text="Generate Continuous", command=generate_continuous).grid(row=6, column=0, padx=10, pady=10)
+    Button(signal_window, text="Generate Discrete", command=generate_discrete).grid(row=6, column=1, padx=10, pady=10)
+
 # Tkinter GUI Setup
 root = Tk()
 root.title("Signal Processing")
@@ -230,5 +290,9 @@ entry_const.grid(row=3, column=1, padx=10, pady=10)
 Button(root, text="Multiply Signal", command=multiply_signal_gui).grid(row=4, column=0, padx=10, pady=10)
 Button(root, text="Delay Signal", command=delay_signal_gui).grid(row=4, column=1, padx=10, pady=10)
 Button(root, text="Advance Signal", command=advance_signal_gui).grid(row=5, column=0, padx=10, pady=10)
+
+Button(root, text="Signal Generation", command=open_signal_generation_menu).grid(row=6, column=0, padx=10, pady=10)
+
+
 
 root.mainloop()
