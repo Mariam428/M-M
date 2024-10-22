@@ -146,6 +146,22 @@ def foldingSignals(sample_indices1, sample_values1):
     return result_indices, result_values
 
 
+def generate_signal(signal_type, amplitude, phase_shift, Fmax, Fs, duration=1.0):
+    # Ensure the sampling theorem is respected
+    signal = 0
+    if Fs < 2 * Fmax:
+        raise ValueError(
+            "Fs >= 2 * Fmax")
+
+    t = np.arange(0, duration, 1 / Fs)  # Time vector based on sampling frequency
+
+    if signal_type == 'sine':
+        signal = amplitude * np.sin(2 * np.pi * Fmax * t + phase_shift)
+    elif signal_type == 'cosine':
+        signal = amplitude * np.cos(2 * np.pi * Fmax * t + phase_shift)
+
+    return t, signal
+
 # GUI Functions
 def load_signal():
     file_path = filedialog.askopenfilename()
