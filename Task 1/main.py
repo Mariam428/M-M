@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
 from tkinter import *
 from tkinter import filedialog, messagebox
+import testcases as test
 
 # requirement 1 read files
 def read_signal(file_path):
@@ -78,8 +79,8 @@ def addSignals(sample_indices1, sample_values1, sample_indices2, sample_values2)
 
     print("Result Indices (Addition):", result_indices)
     print("Result Values (Addition):", result_values)
-
     return result_indices, result_values
+
 
 
 # Multiply signal by a constant
