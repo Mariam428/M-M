@@ -22,11 +22,75 @@ def read_signal(file_path):
             sample_index, sample_value = map(float, line.split())
             sample_indices.append(int(sample_index))
             sample_values.append(sample_value)
-
     return sample_indices, sample_values
+levels_flag=False
+bits_flag=False
+def quantize_signal(num):
+    global levels_flag, bits_flag
+    levels=0
+    bits=0
+    print("in quantize signal")
+    load_signal()
+    global sample_indices1, sample_values1
+    quantized_values=[]
+    print("input indices")
+    print(sample_indices1)
+    print("input values")
+    print(sample_values1)
+    max_value = max(sample_values1)
+    min_value = min(sample_values1)
+    print("Maximum value:", max_value)
+    print("Minimum value:", min_value)
+    if levels_flag:
+        print("user entered levels")
+        levels=int(num)
+        Delta=(max_value-min_value)/levels
+    elif bits_flag:
+        print("user entered bits")
+        bits=int(num)
+        Delta = (max_value - min_value) / pow(2,bits)
+        levels=pow(2,bits)
+    print(f"delta: {Delta}")
+    intervals = [0] * levels
+    mids=levels-1
+    midpoints= [0] * mids
+    print(f"intervals before fill {intervals}")
+    intervals[0]=min_value
+    for i in range(1, levels):
+        intervals[i] = intervals[i - 1] + Delta
+    print(f"intervals after fill {intervals}")
+    for i in range(mids):
+        midpoints[i] = (intervals[i] + intervals[i + 1]) / 2
+
+    print(f"midpoints: {midpoints}")
+    # Assuming 'sample_values1' and 'midpoints' are already defined
+    quantized_values = []
+    quantized_error = []
+    for value in sample_values1:
+        # Initialize minimum distance with a large number and nearest midpoint as None
+        min_distance = float('inf')
+        nearest_midpoint = None
+        for midpoint in midpoints:
+            # Calculate the distance between the sample value and the midpoint
+            distance = abs(value - midpoint)
+
+            # Update nearest midpoint if a closer one is found
+            if distance < min_distance:
+                min_distance = distance
+                nearest_midpoint = midpoint
+
+        # Append the nearest midpoint to quantized_values
+        quantized_values.append(nearest_midpoint)
+        quantized_error.append(min_distance)
+
+    quantized_values = [round(value, 2) for value in quantized_values]
+    print(f"Quantized Signal values {quantized_values}")
+
+    quantized_error = [round(value, 2) for value in  quantized_error]
+    print(f"Quantized Signal Errors { quantized_error}")
 
 
-file_path = 'Signal1.txt'
+file_path = 'Quan1_input.txt'
 sample_indices, sample_values = read_signal(file_path)
 
 file_path2 = 'Signal2.txt'
@@ -209,7 +273,9 @@ def advance_signal_gui():
 def fold_signal_gui():
     result_indices, result_values = foldingSignals(sample_indices1, sample_values1)
     visualize_continuous_signal(result_indices, result_values)
-
+def quantize_signal_gui():
+    const = entry_const.get()
+    quantize_signal(const)
 def open_signal_generation_menu():
     # Create a new top-level window for signal generation
     signal_window = Toplevel(root)
@@ -291,9 +357,10 @@ entry_const.grid(row=3, column=1, padx=10, pady=10)
 Button(root, text="Multiply Signal", command=multiply_signal_gui).grid(row=4, column=0, padx=10, pady=10)
 Button(root, text="Delay Signal", command=delay_signal_gui).grid(row=4, column=1, padx=10, pady=10)
 Button(root, text="Advance Signal", command=advance_signal_gui).grid(row=5, column=0, padx=10, pady=10)
-
 Button(root, text="Signal Generation", command=open_signal_generation_menu).grid(row=6, column=0, padx=10, pady=10)
-
+Button(root, text="Quantize Signal", command=quantize_signal_gui).grid(row=5, column=1, padx=10, pady=10)
+Button(root, text="Read Levels", command=lambda: globals().update({'levels_flag': True})).grid(row=2, column=1, padx=10, pady=10)
+Button(root, text="Read Bits", command=lambda: globals().update({'bits_flag': True})).grid(row=2, column=2, padx=10, pady=10)
 
 
 root.mainloop()
