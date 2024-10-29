@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -46,12 +48,13 @@ def quantize_signal(num):
         print("user entered levels")
         levels=int(num)
         Delta=round((max_value-min_value)/levels,2)
+        bits=math.log2(levels)
     elif bits_flag:
         print("user entered bits")
         bits=int(num)
         Delta = (max_value - min_value) / pow(2,bits)
         levels=pow(2,bits)
-    print(f"delta: {Delta}")
+    #print(f"delta: {Delta}")
     intervals = [0] * int(levels+1)
     mids=levels
     midpoints= [0] * mids
@@ -103,7 +106,7 @@ def quantize_signal(num):
     encoded_values_bits=[]
     # Loop to convert each value to binary and print it
     for value in encoded_values:
-        binary_representation = bin(value)[2:].zfill(3)
+        binary_representation = bin(value)[2:].zfill(int(bits))
         encoded_values_bits.append( binary_representation)
 
     print(f"Encoded values  {  encoded_values_bits}")
@@ -113,13 +116,12 @@ def quantize_signal(num):
     for value in encoded_values:
         indices.append(value + 1)
     print(f"indices  {indices}")
-    #QuantizationTest2('Quan2_out.txt', indices, encoded_values_bits, quantized_values, quantized_error)
-    QuantizationTest1('Quan1_out.txt', encoded_values_bits, quantized_values)
+    QuantizationTest2('Quan2_out.txt', indices, encoded_values_bits, quantized_values, quantized_error)
+    #QuantizationTest1('Quan1_out.txt', encoded_values_bits, quantized_values)
 
 
 file_path = 'Quan1_input.txt'
 sample_indices, sample_values = read_signal(file_path)
-
 file_path2 = 'Signal2.txt'
 sample_indices2, sample_values2 = read_signal(file_path2)
 
