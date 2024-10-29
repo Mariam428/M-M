@@ -5,7 +5,7 @@ from scipy.interpolate import interp1d
 from tkinter import *
 from tkinter import filedialog, messagebox
 import testcases as test
-
+import QuanTest2
 # requirement 1 read files
 def read_signal(file_path):
     with open(file_path, 'r') as file:
@@ -33,6 +33,7 @@ def quantize_signal(num):
     load_signal()
     global sample_indices1, sample_values1
     quantized_values=[]
+    encoded_values=[]
     print("input indices")
     print(sample_indices1)
     print("input values")
@@ -44,50 +45,76 @@ def quantize_signal(num):
     if levels_flag:
         print("user entered levels")
         levels=int(num)
-        Delta=(max_value-min_value)/levels
+        Delta=round((max_value-min_value)/levels,2)
     elif bits_flag:
         print("user entered bits")
         bits=int(num)
         Delta = (max_value - min_value) / pow(2,bits)
         levels=pow(2,bits)
     print(f"delta: {Delta}")
-    intervals = [0] * levels
-    mids=levels-1
+    intervals = [0] * int(levels+1)
+    mids=levels
     midpoints= [0] * mids
-    print(f"intervals before fill {intervals}")
+    #print(f"intervals before fill {intervals}")
     intervals[0]=min_value
+    intervals[levels]=max_value
+
     for i in range(1, levels):
-        intervals[i] = intervals[i - 1] + Delta
+        intervals[i] =round( intervals[i - 1] + Delta, 3)
+
     print(f"intervals after fill {intervals}")
-    for i in range(mids):
-        midpoints[i] = (intervals[i] + intervals[i + 1]) / 2
+    for i in range(levels):
+        midpoints[i] = round((intervals[i] + intervals[i + 1]) / 2,3)
 
     print(f"midpoints: {midpoints}")
     # Assuming 'sample_values1' and 'midpoints' are already defined
     quantized_values = []
     quantized_error = []
+    interval_index = 0
     for value in sample_values1:
         # Initialize minimum distance with a large number and nearest midpoint as None
+        #print(f"value{value}")
         min_distance = float('inf')
         nearest_midpoint = None
+        counter =0
         for midpoint in midpoints:
             # Calculate the distance between the sample value and the midpoint
-            distance = abs(value - midpoint)
+            distance = round(abs(value - midpoint),2)
 
             # Update nearest midpoint if a closer one is found
             if distance < min_distance:
+                #print(distance)
+                #print(min_distance)
                 min_distance = distance
                 nearest_midpoint = midpoint
-
+                interval_index=counter
+            counter+=1
         # Append the nearest midpoint to quantized_values
         quantized_values.append(nearest_midpoint)
-        quantized_error.append(min_distance)
+        quantized_error.append(nearest_midpoint-value)
+        encoded_values.append(interval_index)
 
-    quantized_values = [round(value, 2) for value in quantized_values]
+    quantized_values = [round(value, 3) for value in quantized_values]
     print(f"Quantized Signal values {quantized_values}")
 
-    quantized_error = [round(value, 2) for value in  quantized_error]
-    print(f"Quantized Signal Errors { quantized_error}")
+    quantized_error = [round(value, 3) for value in  quantized_error]
+    print(f"Quantized Error { quantized_error}")
+    print(f"encoded values { encoded_values}")
+    encoded_values_bits=[]
+    # Loop to convert each value to binary and print it
+    for value in encoded_values:
+        binary_representation = bin(value)[2:].zfill(3)
+        encoded_values_bits.append( binary_representation)
+
+    print(f"Encoded values  {  encoded_values_bits}")
+    visualize_discrete_signal(sample_indices1, quantized_values)
+
+    indices=[]
+    for value in encoded_values:
+        indices.append(value + 1)
+    print(f"indices  {indices}")
+    #QuantizationTest2('Quan2_out.txt', indices, encoded_values_bits, quantized_values, quantized_error)
+    QuantizationTest1('Quan1_out.txt', encoded_values_bits, quantized_values)
 
 
 file_path = 'Quan1_input.txt'
@@ -362,5 +389,96 @@ Button(root, text="Quantize Signal", command=quantize_signal_gui).grid(row=5, co
 Button(root, text="Read Levels", command=lambda: globals().update({'levels_flag': True})).grid(row=2, column=1, padx=10, pady=10)
 Button(root, text="Read Bits", command=lambda: globals().update({'bits_flag': True})).grid(row=2, column=2, padx=10, pady=10)
 
+
+def QuantizationTest2(file_name, Your_IntervalIndices, Your_EncodedValues, Your_QuantizedValues, Your_SampledError):
+    expectedIntervalIndices = []
+    expectedEncodedValues = []
+    expectedQuantizedValues = []
+    expectedSampledError = []
+    with open(file_name, 'r') as f:
+        line = f.readline()
+        line = f.readline()
+        line = f.readline()
+        line = f.readline()
+        while line:
+            # process line
+            L = line.strip()
+            if len(L.split(' ')) == 4:
+                L = line.split(' ')
+                V1 = int(L[0])
+                V2 = str(L[1])
+                V3 = float(L[2])
+                V4 = float(L[3])
+                expectedIntervalIndices.append(V1)
+                expectedEncodedValues.append(V2)
+                expectedQuantizedValues.append(V3)
+                expectedSampledError.append(V4)
+                line = f.readline()
+            else:
+                break
+    if (len(Your_IntervalIndices) != len(expectedIntervalIndices)
+            or len(Your_EncodedValues) != len(expectedEncodedValues)
+            or len(Your_QuantizedValues) != len(expectedQuantizedValues)
+            or len(Your_SampledError) != len(expectedSampledError)):
+        print("QuantizationTest2 Test case failed, your signal have different length from the expected one")
+        return
+    for i in range(len(Your_IntervalIndices)):
+        if (Your_IntervalIndices[i] != expectedIntervalIndices[i]):
+            print("QuantizationTest2 Test case failed, your signal have different indicies from the expected one")
+            return
+    for i in range(len(Your_EncodedValues)):
+        if (Your_EncodedValues[i] != expectedEncodedValues[i]):
+            print(
+                "QuantizationTest2 Test case failed, your EncodedValues have different EncodedValues from the expected one")
+            return
+
+    for i in range(len(expectedQuantizedValues)):
+        if abs(Your_QuantizedValues[i] - expectedQuantizedValues[i]) < 0.01:
+            continue
+        else:
+            print(
+                "QuantizationTest2 Test case failed, your QuantizedValues have different values from the expected one")
+            return
+    for i in range(len(expectedSampledError)):
+        if abs(Your_SampledError[i] - expectedSampledError[i]) < 0.01:
+            continue
+        else:
+            print("QuantizationTest2 Test case failed, your SampledError have different values from the expected one")
+            return
+    print("QuantizationTest2 Test case passed successfully")
+def QuantizationTest1(file_name,Your_EncodedValues,Your_QuantizedValues):
+    expectedEncodedValues=[]
+    expectedQuantizedValues=[]
+    with open(file_name, 'r') as f:
+        line = f.readline()
+        line = f.readline()
+        line = f.readline()
+        line = f.readline()
+        while line:
+            # process line
+            L=line.strip()
+            if len(L.split(' '))==2:
+                L=line.split(' ')
+                V2=str(L[0])
+                V3=float(L[1])
+                expectedEncodedValues.append(V2)
+                expectedQuantizedValues.append(V3)
+                line = f.readline()
+            else:
+                break
+    if( (len(Your_EncodedValues)!=len(expectedEncodedValues)) or (len(Your_QuantizedValues)!=len(expectedQuantizedValues))):
+        print("QuantizationTest1 Test case failed, your signal have different length from the expected one")
+        return
+    for i in range(len(Your_EncodedValues)):
+        if(Your_EncodedValues[i]!=expectedEncodedValues[i]):
+            print("QuantizationTest1 Test case failed, your EncodedValues have different EncodedValues from the expected one")
+            return
+    for i in range(len(expectedQuantizedValues)):
+        if abs(Your_QuantizedValues[i] - expectedQuantizedValues[i]) < 0.01:
+            continue
+        else:
+            print("QuantizationTest1 Test case failed, your QuantizedValues have different values from the expected one")
+            return
+    print("QuantizationTest1 Test case passed successfully")
 
 root.mainloop()
