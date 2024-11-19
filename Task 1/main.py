@@ -8,6 +8,7 @@ from tkinter import *
 from tkinter import filedialog, messagebox
 import testcases as test
 import QuanTest2
+import test
 # requirement 1 read files
 def read_signal(file_path):
     with open(file_path, 'r') as file:
@@ -25,6 +26,64 @@ def read_signal(file_path):
             sample_indices.append(int(sample_index))
             sample_values.append(sample_value)
     return sample_indices, sample_values
+def sharpen_signal():
+    print("in sharpen signal")
+    load_signal()
+    first_derivative_values=[]
+    first_derivative_indices =[]
+    second_derivative_values = []
+    second_derivative_indices = []
+    global sample_indices1, sample_values1
+    #print(sample_values1)
+    #Y(n) = x(n)-x(n-1)
+    #Y(n)= x(n+1)-2x(n)+x(n-1)
+    for i in range (1,len(sample_values1)):
+        result_first=sample_values1[i]-sample_values1[i-1]
+        first_derivative_values.append(int(result_first))
+        first_derivative_indices.append(i-1)
+    for i in range(1, len(sample_values1)-1):
+        result_second=sample_values1[i+1]-2*sample_values1[i]+sample_values1[i-1]
+        second_derivative_values.append(result_second)
+        second_derivative_indices.append(i-1)
+    print('first derivative: ')
+    print(first_derivative_indices)
+    print(first_derivative_values)
+    visualize_continuous_signal(first_derivative_indices,first_derivative_values)
+    print('second derivative: ')
+    print(second_derivative_indices)
+    print(second_derivative_values)
+    visualize_continuous_signal(second_derivative_indices, second_derivative_values)
+    CompareSignal("task5files/1st_derivative_out.txt",first_derivative_indices,first_derivative_values)
+    CompareSignal("task5files/2nd_derivative_out.txt",second_derivative_indices, second_derivative_values)
+    return
+def moving_average(window_size):
+    #print("in moving average")
+    print("window size is: ")
+    print(window_size)
+    load_signal()
+    global sample_indices1, sample_values1
+    #print(sample_values1)
+    output_values=[]
+    output_indices=[]
+    encoded_values=[]
+    for i in range(len(sample_values1)-window_size+1):
+        sum=0
+        for j in range(i, i+window_size):
+            sum+=sample_values1[j]
+        output_values.append(round(sum / window_size, 3))
+        output_indices.append(i)
+    visualize_continuous_signal(output_indices,output_values)
+    print(output_indices)
+    print(output_values)
+    encoded_values.append(0)
+    encoded_values.append(0)
+    encoded_values.append(output_indices)
+    CompareSignal("task5files/MovingAvg_out1.txt",output_indices,output_values)
+    return
+def convolve():
+    print("in convolve")
+    global sample_indices1, sample_values1,sample_indices2,sample_values2
+    return
 levels_flag=False
 bits_flag=False
 def quantize_signal(num):
@@ -116,8 +175,8 @@ def quantize_signal(num):
     for value in encoded_values:
         indices.append(value + 1)
     print(f"indices  {indices}")
-    QuantizationTest2('Quan2_out.txt', indices, encoded_values_bits, quantized_values, quantized_error)
-    #QuantizationTest1('Quan1_out.txt', encoded_values_bits, quantized_values)
+    #QuantizationTest2('Quan2_out.txt', indices, encoded_values_bits, quantized_values, quantized_error)
+    QuantizationTest1('Quan1_out.txt', encoded_values_bits, quantized_values)
 
 
 file_path = 'Quan1_input.txt'
@@ -364,13 +423,28 @@ def open_signal_generation_menu():
     Button(signal_window, text="Generate Continuous", command=generate_continuous).grid(row=6, column=0, padx=10, pady=10)
     Button(signal_window, text="Generate Discrete", command=generate_discrete).grid(row=6, column=1, padx=10, pady=10)
 
+
 # Tkinter GUI Setup
 root = Tk()
 root.title("Signal Processing")
+screen_width = root.winfo_screenwidth()
+screen_height = root.winfo_screenheight()
 
+# Set the window size to be as wide as the screen but with a fixed height
+window_width = int(screen_width*0.5)
+window_height = int(screen_height * 0.5)  # Half the height of the screen
+
+# Position the window at the center of the screen
+x_position = 0
+y_position = (screen_height - window_height) // 2
+
+root.geometry(f"{window_width}x{window_height}+{x_position}+{y_position}")
 # Load buttons
 Button(root, text="Load Signal 1", command=load_signal).grid(row=0, column=0, padx=10, pady=10)
 Button(root, text="Load Signal 2", command=load_second_signal).grid(row=0, column=1, padx=10, pady=10)
+Button(root, text="Moving Average", command=lambda: moving_average(int(entry_const.get()))).grid(row=0, column=4, padx=10, pady=10)
+Button(root, text="Sharpen Signal", command=sharpen_signal).grid(row=1, column=4, padx=10, pady=10)
+Button(root, text="Convolve", command=convolve).grid(row=2, column=4, padx=10, pady=10)
 
 # Operation buttons
 Button(root, text="Add Signals", command=add_signals_gui).grid(row=1, column=0, padx=10, pady=10)
@@ -482,5 +556,44 @@ def QuantizationTest1(file_name,Your_EncodedValues,Your_QuantizedValues):
             print("QuantizationTest1 Test case failed, your QuantizedValues have different values from the expected one")
             return
     print("QuantizationTest1 Test case passed successfully")
+def CompareSignal(file_name, Your_EncodedValues, Your_Values):
+    expectedIndices=[]
+    expectedValues=[]
+    with open(file_name, 'r') as f:
+        line = f.readline()
+        line = f.readline()
+        line = f.readline()
+        line = f.readline()
+        while line:
+            # process line
+            L=line.strip()
+            if len(L.split(' '))==2:
+                L=line.split(' ')
+                V2=int(L[0])
+                V3=float(L[1])
+                expectedIndices.append(V2)
+                expectedValues.append(V3)
+                line = f.readline()
+            else:
+                break
+    if( (len(Your_EncodedValues)!=len(expectedIndices)) or (len(Your_Values) != len(expectedValues))):
+        messagebox.showerror("Test Case Failed",
+                             " Test case failed, your signal has a different length from the expected one.")
+        print(Your_EncodedValues)
+        print(expectedIndices)
+        return
+    for i in range(len(Your_EncodedValues)):
+        if(Your_EncodedValues[i]!=expectedIndices[i]):
 
+            messagebox.showerror("Test Case Failed",
+                                 " Test case failed, your Values are different from the expected one.")
+            return
+    for i in range(len(expectedValues)):
+        if abs(Your_Values[i] - expectedValues[i]) < 0.01:
+            continue
+        else:
+            messagebox.showerror("Test Case Failed",
+                                 "Test case failed, your Values have different values from the expected one.")
+            return
+    messagebox.showinfo("Test Case Passed", " Test case passed successfully.")
 root.mainloop()
