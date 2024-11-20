@@ -80,9 +80,39 @@ def moving_average(window_size):
     encoded_values.append(output_indices)
     CompareSignal("task5files/MovingAvg_out1.txt",output_indices,output_values)
     return
+
 def convolve():
     print("in convolve")
-    global sample_indices1, sample_values1,sample_indices2,sample_values2
+    output_indices = []
+    output_values = []
+    global sample_indices1, sample_values1, sample_indices2, sample_values2
+    dict1 = {sample_indices1[i]: sample_values1[i] for i in range(len(sample_indices1))}
+    # Create dict2 for sample_indices2 and sample_values2
+    dict2 = {sample_indices2[i]: sample_values2[i] for i in range(len(sample_indices2))}
+    # Calculate the range of output indices
+    first_index = sample_indices1[0] + sample_indices2[0]
+    last_index = sample_indices1[-1] + sample_indices2[-1]
+    # Populate output_indices
+    for i in range(first_index, last_index + 1):
+        output_indices.append(i)
+    print("Output Indices:", output_indices)
+    for i in range(first_index, last_index + 1):
+        value = 0  # Initialize the convolution sum for the current output index
+        # Iterate over the indices of the first signal
+        for n in range(len(sample_indices1)):
+            flipped_index = i - sample_indices1[n]  # Calculate the corresponding index in sample_values2_flipped
+
+            # Check if the flipped_index is valid in dict2
+            if flipped_index in dict2:
+                value += dict1[sample_indices1[n]] * dict2[flipped_index]  # Add the product of overlapping values
+
+        # Append the computed convolution value for the current output index
+        output_values.append(int(value))
+
+
+
+    print("Output Values:", output_values)
+    CompareSignal("task5files/Conv_output.txt",output_indices,output_values)
     return
 levels_flag=False
 bits_flag=False
