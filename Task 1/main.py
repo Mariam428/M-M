@@ -110,7 +110,7 @@ def convolve():
         output_values.append(int(value))
 
 
-
+    visualize_continuous_signal(output_indices,output_values)
     print("Output Values:", output_values)
     CompareSignal("task5files/Conv_output.txt",output_indices,output_values)
     return
