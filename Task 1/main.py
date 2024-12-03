@@ -1,5 +1,5 @@
 import math
-
+import signalcompare as signal_compare
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -10,22 +10,7 @@ import testcases as test
 import QuanTest2
 import test
 # requirement 1 read files
-def read_signal(file_path):
-    with open(file_path, 'r') as file:
-        # First row: Read the number of samples (N)
-        N = int(file.readline().strip())
 
-        # Initialize lists to store the sample indices and values
-        sample_indices = []
-        sample_values = []
-
-        # Loop over the remaining lines and parse the sample index and value
-        for _ in range(N):
-            line = file.readline().strip()
-            sample_index, sample_value = map(float, line.split())
-            sample_indices.append(int(sample_index))
-            sample_values.append(sample_value)
-    return sample_indices, sample_values
 def sharpen_signal():
     print("in sharpen signal")
     load_signal()
@@ -209,13 +194,29 @@ def quantize_signal(num):
     QuantizationTest1('Quan1_out.txt', encoded_values_bits, quantized_values)
 
 
-file_path = 'Quan1_input.txt'
-sample_indices, sample_values = read_signal(file_path)
-file_path2 = 'Signal2.txt'
-sample_indices2, sample_values2 = read_signal(file_path2)
+# file_path = 'input_Signal_DFT.txt'
+# sample_indices, sample_values = read_signal(file_path)
+# file_path2 = 'Output_Signal_DFT_A,Phase.txt'
+# sample_indices2, sample_values2 = read_signal(file_path2)
 
 
 # requirement 2 visualize the signals
+def read_signal(file_path):
+    try:
+        with open(file_path, 'r') as file:
+            N = int(file.readline().strip())  # Number of samples
+            sample_indices = []
+            sample_values = []
+
+            for _ in range(N):
+                line = file.readline().strip()
+                sample_index, sample_value = map(float, line.split())
+                sample_indices.append(int(sample_index))
+                sample_values.append(sample_value)
+        return sample_indices, sample_values
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to read signal: {e}")
+        return [], []
 def visualize_continuous_signal(sample_indices, sample_values):
     plt.figure(figsize=(10, 6))
     plt.plot(sample_indices, sample_values, marker='o', linestyle='-', color='b', label='Continuous Signal')
@@ -262,8 +263,6 @@ def addSignals(sample_indices1, sample_values1, sample_indices2, sample_values2)
     print("Result Indices (Addition):", result_indices)
     print("Result Values (Addition):", result_values)
     return result_indices, result_values
-
-
 
 # Multiply signal by a constant
 def multiplySignal(sample_indices, sample_values, const):
@@ -345,8 +344,81 @@ def generate_signal(signal_type, amplitude, phase_shift, Fmax, Fs, duration=1.0)
 
     return t, signal
 
+def read_File2(file_path):
+    try:
+        with open(file_path, 'r') as file:
+            N = int(file.readline().strip())  # Number of samples
+            sample_indices = []
+            sample_values = []
+
+            for _ in range(N):
+                line = file.readline().strip()
+                sample_index, sample_value = map(float, line.split())
+                sample_indices.append(sample_index)
+                sample_values.append(sample_value)
+        return sample_indices, sample_values
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to read signal: {e}")
+        return [], []
+def dft(sample_values):
+    N = len(sample_values)
+    dft_result = []
+    amplitude = np.zeros(N)
+    phaseShift = np.zeros(N)
+
+    for k in range(N):  # Outer loop X[k]
+        X_k = 0
+        for n in range(N):  # Inner loop summation
+            X_k += sample_values[n] * np.exp(-2j * np.pi * k * n / N)  # DFT
+        dft_result.append(X_k)
+    for i in range(N):
+        amplitude[i] = np.sqrt((dft_result[i].real ** 2) + (dft_result[i].imag ** 2))
+        phaseShift[i] = np.arctan2(dft_result[i].imag, dft_result[i].real)
+
+    sample_indices, sample_values = read_File2('Output_Signal_DFT_A,Phase.txt')
+    result = signal_compare.SignalComapreAmplitude(amplitude, sample_indices)
+    if result:
+        print("Test passed successfully amplitude")
+    else:
+        print("Error: Signal amplitude comparison failed.")
+    # print("test amplitude",sample_indices)
+    result2 = signal_compare.SignalComaprePhaseShift(phaseShift,sample_values)
+    if result2:
+        print("Test passed successfully phase shift")
+    else:
+        print("Error: Signal amplitude comparison failed.")
+    # print("test phase", sample_values)
+    return np.array(dft_result), amplitude, phaseShift
+
+def idft(amplitudes, phases):
+    N = len(amplitudes)
+    X_k = np.zeros(N, dtype=complex)
+
+    # get X[k] from amplitude and phase shift
+    for k in range(N):
+        # X[k] = amplitude[k] * exp(j * phase[k])
+        X_k[k] = amplitudes[k] * (np.cos(phases[k]) + 1j * np.sin(phases[k]))
+
+    # calculate IDFT
+    x_n = np.zeros(N, dtype=complex)
+    for n in range(N):
+        for k in range(N):
+            x_n[n] += X_k[k] * np.exp(2j * np.pi * k * n / N)  # IDFT
+        x_n[n] /= N
+    x_n = np.real(x_n)
+    x_n2= [round(signal) for signal in x_n.tolist()]
+    print(x_n2)
+    sample_indices, sample_values = read_File2('Output_Signal_IDFT.txt')
+    result2 = signal_compare.SignalComapreAmplitude(x_n2, sample_values)
+    if result2:
+        print("Test passed successfully")
+    else:
+        print("Error: Signal amplitude comparison failed.")
+    return x_n2
+
 
 # GUI Functions
+
 def load_signal():
     file_path = filedialog.askopenfilename()
     if file_path:
@@ -443,6 +515,7 @@ def open_signal_generation_menu():
         t, signal = generate_selected_signal(selected_signal_type.get())
         visualize_discrete_signal(t, signal)
 
+
     # Create a variable to store the selected signal type
     selected_signal_type = StringVar(signal_window, "sine")
 
@@ -452,6 +525,29 @@ def open_signal_generation_menu():
 
     Button(signal_window, text="Generate Continuous", command=generate_continuous).grid(row=6, column=0, padx=10, pady=10)
     Button(signal_window, text="Generate Discrete", command=generate_discrete).grid(row=6, column=1, padx=10, pady=10)
+
+def apply_dft():
+    if 'sample_values1' not in globals():
+        messagebox.showerror("Error", "No signal loaded for DFT")
+        return
+    N = len(sample_values1)
+    _, amplitude, phase_shift = dft(sample_values1)
+    if amplitude is not None and phase_shift is not None:
+        print("Amplitude:", amplitude)
+        print("Phase Shift:", phase_shift)
+    sampling_frequency = int(entry_const.get())
+    frequency = np.fft.fftfreq(N, d=1 / sampling_frequency)
+    visualize_discrete_signal(frequency,amplitude)
+    visualize_discrete_signal(frequency,phase_shift)
+
+def apply_idft():
+    if 'sample_values1' and 'sample_indices1' not in globals():
+        messagebox.showerror("Error", "No signal loaded for IDFT")
+        return
+    N = len(sample_values1)
+    values = idft(sample_indices1,sample_values1)
+    timeline = np.arange(N)
+    visualize_discrete_signal(timeline,values)
 
 
 # Tkinter GUI Setup
@@ -494,7 +590,8 @@ Button(root, text="Signal Generation", command=open_signal_generation_menu).grid
 Button(root, text="Quantize Signal", command=quantize_signal_gui).grid(row=5, column=1, padx=10, pady=10)
 Button(root, text="Read Levels", command=lambda: globals().update({'levels_flag': True})).grid(row=2, column=1, padx=10, pady=10)
 Button(root, text="Read Bits", command=lambda: globals().update({'bits_flag': True})).grid(row=2, column=2, padx=10, pady=10)
-
+Button(root, text="Apply DFT", command=apply_dft).grid(row=7, column=2, padx=10, pady=10)
+Button(root, text="Apply IDFT", command=apply_idft).grid(row=8, column=2, padx=10, pady=10)
 
 def QuantizationTest2(file_name, Your_IntervalIndices, Your_EncodedValues, Your_QuantizedValues, Your_SampledError):
     expectedIntervalIndices = []

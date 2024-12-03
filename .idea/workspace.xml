@@ -6,6 +6,9 @@
   <component name="ChangeListManager">
     <list default="true" id="2b75b872-788c-451d-8ab3-33cd5ce932cf" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Task 1/.idea/Task 1.iml" beforeDir="false" afterPath="$PROJECT_DIR$/Task 1/.idea/Task 1.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Task 1/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/Task 1/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Task 1/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/Task 1/main.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -40,15 +43,17 @@
   "keyToString": {
     "Python.main.executor": "Run",
     "Python.sendto.executor": "Run",
+    "Python.signalcompare.executor": "Run",
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "git-widget-placeholder": "main",
-    "last_opened_file_path": "D:/DSP/Task 1",
+    "last_opened_file_path": "D:/DSP/Tasks",
     "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable"
   }
 }]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="D:\DSP\Tasks\Task 1" />
       <recent name="D:\data analysis tasks\Task 1" />
     </key>
   </component>
