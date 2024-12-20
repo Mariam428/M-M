@@ -5,11 +5,54 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
 from tkinter import *
-from tkinter import filedialog, messagebox
+from tkinter import filedialog, messagebox, simpledialog
 import testcases as test
 import QuanTest2
 import test
+from tkinter import ttk
+from tkinter import filedialog, messagebox
 # requirement 1 read files
+def classify_signal():
+    class11values = read_sample_values(r"Correlation Task Files/point3 Files/Class 1/down1.txt")
+    class12values = read_sample_values(r"Correlation Task Files/point3 Files/Class 1/down2.txt")
+    class13values = read_sample_values(r"Correlation Task Files/point3 Files/Class 1/down3.txt")
+    class14values = read_sample_values(r"Correlation Task Files/point3 Files/Class 1/down4.txt")
+    class15values = read_sample_values(r"Correlation Task Files/point3 Files/Class 1/down5.txt")
+
+    class21values = read_sample_values(r"Correlation Task Files/point3 Files/Class 2/up1.txt")
+    class22values = read_sample_values(r"Correlation Task Files/point3 Files/Class 2/up2.txt")
+    class23values = read_sample_values(r"Correlation Task Files/point3 Files/Class 2/up3.txt")
+    class24values = read_sample_values(r"Correlation Task Files/point3 Files/Class 2/up4.txt")
+    class25values = read_sample_values(r"Correlation Task Files/point3 Files/Class 2/up5.txt")
+
+    class1 = [class11values ,class12values , class13values , class14values ,class15values]
+    class2 = [class21values , class22values ,class23values ,class24values ,class25values]
+    corr_c1 = []
+    corr_c2 = []
+    global sample_indices2, sample_values2 ,sample_indices1
+
+    # Loop through class1 signals
+    for i, signal in enumerate(class1, start=1):
+        sample_values2 = signal  # Update global variables
+        sample_indices2 = sample_indices1 = list(range(len(sample_values2)))
+        _, corr_class1 = calculate_correlation()  # Use updated globals in calculation
+        corr_c1.append(corr_class1)
+
+    # Loop through class2 signals
+    for i, signal in enumerate(class2, start=1):
+        sample_values2 = signal  # Update global variables
+        sample_indices2 = sample_indices1 = list(range(len(sample_values2)))
+        _, corr_class2 = calculate_correlation()  # Use updated globals in calculation
+        corr_c2.append(corr_class2)
+
+    # Determine the classification based on maximum correlation
+    max_corr_class1 = np.max(corr_c1)
+    max_corr_class2 = np.max(corr_c2)
+
+    if max_corr_class1 > max_corr_class2:
+        return "A", corr_c1
+    else:
+        return "B", corr_c2
 
 def sharpen_signal():
     print("in sharpen signal")
@@ -92,13 +135,165 @@ def convolve():
                 value += dict1[sample_indices1[n]] * dict2[flipped_index]  # Add the product of overlapping values
 
         # Append the computed convolution value for the current output index
-        output_values.append(int(value))
+        output_values.append(value)
 
 
     visualize_continuous_signal(output_indices,output_values)
     print("Output Values:", output_values)
-    CompareSignal("task5files/Conv_output.txt",output_indices,output_values)
+    #CompareSignal("task5files/Conv_output.txt",output_indices,output_values)
+    Compare_Signals(r"FIR test cases/Testcase 6/ecg_band_pass_filtered.txt", output_indices, output_values)
     return
+
+def IDFT(frequency_domain_signal):
+    N = len(frequency_domain_signal)
+    idft_result = []
+    for n in range(N):
+        x_n = 0
+        for k in range(N):
+            x_n += frequency_domain_signal[k] * np.exp(2j * np.pi * k * n / N)
+        x_n /= N
+        idft_result.append(x_n)
+    return idft_result
+
+def FastConvolution():
+    global sample_indices2 , sample_values2, sample_indices1,sample_values1
+    N1 = len(sample_indices1)
+    N2 = len(sample_indices2)
+    N = N1 + N2 - 1
+    signal1 = np.pad(sample_indices1, (0, N - N1))
+    signal2 = np.pad(sample_indices2, (0, N - N2))
+
+    signal1_dft = dft(signal1)
+    signal2_dft = dft(signal2)
+    convolution_freq_domain = [a * b for a, b in zip(signal1_dft, signal2_dft)]
+    convolution_time_domain = IDFT(convolution_freq_domain)
+
+    convolution_indices = sample_indices1[0] + sample_indices2[0] + np.arange(N)
+    convolution_samples_real = [x.real for x in convolution_time_domain]
+
+    # ConvTest(convolution_indices, convolution_samples_real)
+    # plot_signals_convolution(indices_signal1, samples_signal1, indices_signal2, samples_signal2, convolution_indices,
+    #                          convolution_samples_real)
+    return convolution_indices, convolution_samples_real
+
+
+def generate_filter():
+    global filter_type, fs_entry, fc_entry, transition_band_entry, attenuation_entry
+    N = 0
+    w = []
+    h = []
+    indices = []
+    filtertype = filter_type.get()
+    samplingfreq = float(fs_entry.get())
+    f1 = float(fc_entry.get())
+    transition = float(transition_band_entry.get())
+    attenuation = float(attenuation_entry.get())
+
+    # Logic for calculating N, w, and h based on filter type and other inputs
+    if attenuation <= 21:
+        N = np.ceil((samplingfreq * 0.9) / transition)
+        if N % 2 == 0:
+            N += 1
+
+        for i in range(int(0 - ((N - 1) / 2)), int(((N - 1) / 2) + 1)):
+            indices.append(i)
+            w.append(1)
+
+    elif attenuation <= 44:
+        N = np.ceil((samplingfreq * 3.1) / transition)
+        if N % 2 == 0:
+            N += 1
+
+        for i in range(int(0 - ((N - 1) / 2)), int(((N - 1) / 2) + 1)):
+            indices.append(i)
+            w.append(0.5 + (0.5 * np.cos((2 * np.pi * i) / N)))
+
+    elif attenuation <= 53:
+        N = np.ceil((samplingfreq * 3.3) / transition)
+        if N % 2 == 0:
+            N += 1
+
+        for i in range(int(0 - ((N - 1) / 2)), int(((N - 1) / 2) + 1)):
+            indices.append(i)
+            w.append(0.54 + (0.46 * np.cos((2 * np.pi * i) / N)))
+
+    elif attenuation <= 74:
+        N = np.ceil((samplingfreq * 5.5) / transition)
+        if N % 2 == 0:
+            N += 1
+
+        for i in range(int(0 - ((N - 1) / 2)), int(((N - 1) / 2) + 1)):
+            indices.append(i)
+            w.append(0.42 + (0.5 * np.cos((2 * np.pi * i) / (N - 1))) + (0.08 * np.cos((4 * np.pi * i) / (N - 1))))
+
+    N = int(N)
+    filter_index=[]
+    temp = int(N/2)
+    for i in range(-temp, temp + 1, 1):
+        filter_index.append(i)
+
+
+    if filtertype == "lowpass":
+        Fc1 = (f1 + (transition / 2)) / samplingfreq
+        for i in range(int(0 - ((N - 1) / 2)), int(((N - 1) / 2) + 1)):
+            if i == 0:
+                h.append(2 * Fc1)
+                continue
+            h.append(2 * Fc1 * ((np.sin(i * (2 * np.pi * Fc1))) / (i * (2 * np.pi * Fc1))))
+
+    elif filtertype == "highpass":
+        Fc1 = (f1 - (transition / 2)) / samplingfreq
+        for i in range(int(0 - ((N - 1) / 2)), int(((N - 1) / 2) + 1)):
+            if i == 0:
+                h.append(1 - (2 * Fc1))
+                continue
+            h.append(-2 * Fc1 * (np.sin(i * (2 * np.pi * Fc1)) / (i * (2 * np.pi * Fc1))))
+
+    elif filtertype == "bandpass":
+        f2 = float(simpledialog.askstring("Input", "Enter F2:"))
+        Fc1 = (f1 - (transition / 2)) / samplingfreq
+        Fc2 = (f2 + (transition / 2)) / samplingfreq
+
+        for i in range(int(0 - ((N - 1) / 2)), int(((N - 1) / 2) + 1)):
+            if i == 0:
+                h.append(2 * (Fc2 - Fc1))
+                continue
+            h.append((2 * Fc2 * (np.sin(i * (2 * np.pi * Fc2)) / (i * (2 * np.pi * Fc2)))) -
+                     (2 * Fc1 * (np.sin(i * (2 * np.pi * Fc1)) / (i * (2 * np.pi * Fc1)))))
+
+    elif filtertype == "bandstop":
+        f2 = float(simpledialog.askstring("Input", "Enter F2:"))
+        Fc1 = (f1 + (transition / 2)) / samplingfreq
+        Fc2 = (f2 - (transition / 2)) / samplingfreq
+
+        for i in range(int(0 - ((N - 1) / 2)), int(((N - 1) / 2) + 1)):
+            if i == 0:
+                h.append(1 - (2 * (Fc2 - Fc1)))
+                continue
+            h.append((2 * Fc1 * (np.sin(i * (2 * np.pi * Fc1)) / (i * (2 * np.pi * Fc1)))) -
+                     (2 * Fc2 * (np.sin(i * (2 * np.pi * Fc2)) / (i * (2 * np.pi * Fc2)))))
+
+    # Multiply h and w to create the final result
+    multiplied_signal = []
+    indices=[]
+    length = len(w)
+    assert len(h) == len(w), f"Length of w and h must be equal but are {len(w)} and {len(h)}"
+
+    for i in range(length):
+        multiplied_signal.append(w[i] * h[i])
+    #print(multiplied_signal)
+    #print(filter_index)
+    global sample_indices2 , sample_values2
+    sample_indices2 = filter_index
+    sample_values2 = multiplied_signal
+    #final_indices,final_values2 = FastConvolution()
+    Compare_Signals(r"FIR test cases/Testcase 5/BPFCoefficients.txt", sample_indices2, sample_values2)
+    #convolve()
+    #print(multiplied_signal)
+    #print(filter_index)
+    return
+
+
 levels_flag=False
 bits_flag=False
 def quantize_signal(num):
@@ -201,6 +396,21 @@ def quantize_signal(num):
 
 
 # requirement 2 visualize the signals
+
+def read_sample_values(file_path):
+    try:
+        with open(file_path, 'r') as file:
+            sample_values = []
+
+            for line in file:
+                sample_value = float(line.strip())
+                sample_values.append(sample_value)
+
+        return sample_values
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to read sample values: {e}")
+        return []
+
 def read_signal(file_path):
     try:
         with open(file_path, 'r') as file:
@@ -239,6 +449,58 @@ def visualize_discrete_signal(sample_indices, sample_values):
     plt.legend()
     plt.show()
 
+def calculate_correlation():
+    # Use global variables instead of reading from paths
+    signalindecies, signalvalues = sample_indices1, sample_values1
+    signalindecies2, signalvalues2 = sample_indices2, sample_values2
+
+    # Check if signals are empty
+    if not signalindecies or not signalindecies2:
+        raise ValueError("One or both signals are empty. Please ensure valid signals are loaded.")
+
+    float_point = 8
+    N = len(signalindecies)
+
+    # Check for zero-length signals
+    if N == 0:
+        raise ValueError("Signal length is zero. Please provide valid signals.")
+
+    result = []
+
+    x1_square = [i ** 2 for i in signalvalues]
+    x2_square = [i ** 2 for i in signalvalues2]
+    p12_denominator = math.sqrt((sum(x1_square) * sum(x2_square))) / N
+    p12_denominator = round(p12_denominator, float_point)
+
+    # from r1 to r_end
+    for i in range(1, N + 1):
+        signal2_shifted = signalvalues2[i:] + signalvalues2[0:N - (N - i)]
+        r = round(sum([signalvalues[i] * signal2_shifted[i] for i in range(N)]) / N, float_point)
+        p = round(r / p12_denominator, float_point)
+        result.append(p)
+
+    # r0 == r_end
+    result = [result[N - 1]] + result
+    result = result[:N]
+    indices = list(range(N))
+    print("indices :",indices)
+    print("results :", result)
+    #Compare_Signals(r"Correlation Task Files/Point1 Correlation/CorrOutput.txt", indices, result)
+    return indices, result
+
+def compute_time_delay_with_correlation(sampling_rate):
+    # Use the custom correlation function
+    indices, correlation_result = calculate_correlation()
+
+    # Find the index of the maximum correlation value
+    max_correlation_index = correlation_result.index(max(correlation_result))
+
+    # Compute the lag (in samples)
+    lag = indices[max_correlation_index]
+
+    # Convert lag to time delay (in seconds)
+    time_delay = lag / sampling_rate
+    return time_delay
 
 # add signals
 def addSignals(sample_indices1, sample_values1, sample_indices2, sample_values2):
@@ -278,7 +540,6 @@ def multiplySignal(sample_indices, sample_values, const):
     print("Result Values (Multiplication):", result_values)
 
     return result_indices, result_values
-
 
 # subtract signals
 def subtractSignals(sample_indices1, sample_values1, sample_indices2, sample_values2):
@@ -372,8 +633,8 @@ def dft(sample_values):
             X_k += sample_values[n] * np.exp(-2j * np.pi * k * n / N)  # DFT
         dft_result.append(X_k)
     for i in range(N):
-        amplitude[i] = np.sqrt((dft_result[i].real ** 2) + (dft_result[i].imag ** 2))
-        phaseShift[i] = np.arctan2(dft_result[i].imag, dft_result[i].real)
+        amplitude[i] = np.sqrt((dft_result[i].real ** 2) + (dft_result[i].imag ** 2))  # square root (a^2 + b^2)
+        phaseShift[i] = np.arctan2(dft_result[i].imag, dft_result[i].real)  # shift tan (y/x)
 
     sample_indices, sample_values = read_File2('Output_Signal_DFT_A,Phase.txt')
     result = signal_compare.SignalComapreAmplitude(amplitude, sample_indices)
@@ -416,7 +677,6 @@ def idft(amplitudes, phases):
         print("Error: Signal amplitude comparison failed.")
     return x_n2
 
-
 # GUI Functions
 
 def load_signal():
@@ -425,6 +685,14 @@ def load_signal():
         global sample_indices1, sample_values1
         sample_indices1, sample_values1 = read_signal(file_path)
         visualize_continuous_signal(sample_indices1, sample_values1)
+    else:
+        messagebox.showerror("Error", "No file selected")
+
+def load_classify_signal():
+    file_path = filedialog.askopenfilename()
+    if file_path:
+        global sample_values1
+        sample_values1 = read_sample_values(file_path)
     else:
         messagebox.showerror("Error", "No file selected")
 
@@ -549,6 +817,39 @@ def apply_idft():
     timeline = np.arange(N)
     visualize_discrete_signal(timeline,values)
 
+def apply_correlation():
+    if 'sample_indices1' in globals() and 'sample_values1' in globals() and \
+            'sample_indices2' in globals() and 'sample_values2' in globals():
+        # Call the calculate_correlation function with loaded signals
+        indices, result = calculate_correlation()
+        # Visualize the correlation output
+        visualize_continuous_signal(indices, result)
+    else:
+        messagebox.showerror("Error", "Please load both signals before applying correlation")
+
+def apply_correlation_with_delay():
+    if not ('sample_values1' in globals() and 'sample_values2' in globals()):
+        messagebox.showerror("Error", "Please load both signals before applying correlation.")
+        return
+
+    try:
+        # Get the sampling rate from user input
+        sampling_rate = float(fs_entry.get())
+
+        # Compute the time delay using the loaded signals
+        time_delay = compute_time_delay_with_correlation(sampling_rate)
+        messagebox.showinfo("Time Delay", f"The time delay is {time_delay:.4f} seconds.")
+    except Exception as e:
+        messagebox.showerror("Error", f"An error occurred: {str(e)}")
+def apply_classify_signal():
+    classif, result = classify_signal()
+    if 'sample_indices1' in globals() and 'sample_values1' in globals() and \
+            'sample_indices2' in globals() and 'sample_values2' in globals():
+        # Call the calculate_correlation function with loaded signals
+        messagebox.showinfo("classification", f"signal belongs to class {classif}.")
+
+    else:
+        messagebox.showerror("Error", "Please load both signals before applying correlation")
 
 # Tkinter GUI Setup
 root = Tk()
@@ -557,8 +858,8 @@ screen_width = root.winfo_screenwidth()
 screen_height = root.winfo_screenheight()
 
 # Set the window size to be as wide as the screen but with a fixed height
-window_width = int(screen_width*0.5)
-window_height = int(screen_height * 0.5)  # Half the height of the screen
+window_width = int(screen_width*0.7)
+window_height = int(screen_height * 0.7)  # Half the height of the screen
 
 # Position the window at the center of the screen
 x_position = 0
@@ -571,6 +872,8 @@ Button(root, text="Load Signal 2", command=load_second_signal).grid(row=0, colum
 Button(root, text="Moving Average", command=lambda: moving_average(int(entry_const.get()))).grid(row=0, column=4, padx=10, pady=10)
 Button(root, text="Sharpen Signal", command=sharpen_signal).grid(row=1, column=4, padx=10, pady=10)
 Button(root, text="Convolve", command=convolve).grid(row=2, column=4, padx=10, pady=10)
+Button(root, text="read classify signal", command=load_classify_signal).grid(row=0, column=2, padx=10, pady=10)
+
 
 # Operation buttons
 Button(root, text="Add Signals", command=add_signals_gui).grid(row=1, column=0, padx=10, pady=10)
@@ -592,6 +895,28 @@ Button(root, text="Read Levels", command=lambda: globals().update({'levels_flag'
 Button(root, text="Read Bits", command=lambda: globals().update({'bits_flag': True})).grid(row=2, column=2, padx=10, pady=10)
 Button(root, text="Apply DFT", command=apply_dft).grid(row=7, column=2, padx=10, pady=10)
 Button(root, text="Apply IDFT", command=apply_idft).grid(row=8, column=2, padx=10, pady=10)
+Button(root, text="Apply correlation", command=apply_correlation).grid(row=9, column=2, padx=10, pady=10)
+Button(root, text="compute delay", command=apply_correlation_with_delay).grid(row=10, column=2, padx=10, pady=10)
+Button(root, text="classify signal", command=apply_classify_signal).grid(row=11, column=2, padx=10, pady=10)
+
+# Filter Specification Inputs
+Label(root, text="Filter Type:").grid(row=0, column=5, padx=5, pady=5)
+filter_type = ttk.Combobox(root, values=["lowpass", "highpass", "bandpass", "bandstop"])
+filter_type.grid(row=1, column=5, padx=5, pady=5)
+Label(root, text="Sampling Frequency (FS):").grid(row=2, column=5, padx=5, pady=5)
+fs_entry = Entry(root)
+fs_entry.grid(row=3, column=5, padx=5, pady=5)
+Label(root, text="Cutoff Frequency (FC):").grid(row=4, column=5, padx=5, pady=5)
+fc_entry = Entry(root)
+fc_entry.grid(row=5, column=5, padx=5, pady=5)
+Label(root, text="Transition Band (Hz):").grid(row=6, column=5, padx=5, pady=5)
+transition_band_entry = Entry(root)
+transition_band_entry.grid(row=7, column=5, padx=5, pady=5)
+Label(root, text="Stopband Attenuation (dB):").grid(row=8, column=5, padx=5, pady=5)
+attenuation_entry = Entry(root)
+attenuation_entry.grid(row=9, column=5, padx=5, pady=5)
+Button(text="Generate Filter", command=generate_filter).grid(row=10, column=5, columnspan=2,pady=10)
+
 
 def QuantizationTest2(file_name, Your_IntervalIndices, Your_EncodedValues, Your_QuantizedValues, Your_SampledError):
     expectedIntervalIndices = []
@@ -723,4 +1048,42 @@ def CompareSignal(file_name, Your_EncodedValues, Your_Values):
                                  "Test case failed, your Values have different values from the expected one.")
             return
     messagebox.showinfo("Test Case Passed", " Test case passed successfully.")
+def Compare_Signals(file_name,Your_indices,Your_samples):
+    expected_indices=[]
+    expected_samples=[]
+    with open(file_name, 'r') as f:
+        line = f.readline()
+        line = f.readline()
+        line = f.readline()
+        line = f.readline()
+        while line:
+            # process line
+            L=line.strip()
+            if len(L.split(' '))==2:
+                L=line.split(' ')
+                V1=int(L[0])
+                V2=float(L[1])
+                expected_indices.append(V1)
+                expected_samples.append(V2)
+                line = f.readline()
+            else:
+                break
+    print("Current Output Test file is: ")
+    print(file_name)
+    print("\n")
+    if (len(expected_samples)!=len(Your_samples)) and (len(expected_indices)!=len(Your_indices)):
+        print("Test case failed, your signal have different length from the expected one")
+        return
+    for i in range(len(Your_indices)):
+        if(Your_indices[i]!=expected_indices[i]):
+            print("Test case failed, your signal have different indicies from the expected one")
+            return
+    for i in range(len(expected_samples)):
+        if abs(Your_samples[i] - expected_samples[i]) < 0.01:
+            continue
+        else:
+            print("Test case failed, your signal have different values from the expected one")
+            return
+    print("Test case passed successfully")
+
 root.mainloop()
