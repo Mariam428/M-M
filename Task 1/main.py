@@ -319,7 +319,8 @@ def generate_filter():
     sample_indices2 = filter_index
     sample_values2 = multiplied_signal
     final_indices,final_values2 = FastConvolution()
-    Compare_Signals(r"FIR test cases/Testcase 2/ecg_low_pass_filtered.txt", final_indices, final_indices)
+    #Compare_Signals(r"FIR test cases/Testcase 2/ecg_low_pass_filtered.txt", final_indices, final_values2)
+    Compare_Signals(r"FIR test cases/Testcase 2/ecg_low_pass_filtered.txt", sample_indices2, sample_values2)
     #convolve()
     #print(multiplied_signal)
     #print(filter_index)
@@ -949,7 +950,6 @@ Label(root, text="Stopband Attenuation (dB):").grid(row=8, column=5, padx=5, pad
 attenuation_entry = Entry(root)
 attenuation_entry.grid(row=9, column=5, padx=5, pady=5)
 Button(text="Generate Filter", command=generate_filter).grid(row=10, column=5, columnspan=2,pady=10)
-
 
 def QuantizationTest2(file_name, Your_IntervalIndices, Your_EncodedValues, Your_QuantizedValues, Your_SampledError):
     expectedIntervalIndices = []
