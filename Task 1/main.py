@@ -11,6 +11,8 @@ import QuanTest2
 import test
 from tkinter import ttk
 from tkinter import filedialog, messagebox
+from decimal import Decimal, ROUND_HALF_UP
+
 # requirement 1 read files
 def classify_signal():
     class11values = read_sample_values(r"Correlation Task Files/point3 Files/Class 1/down1.txt")
@@ -141,41 +143,71 @@ def convolve():
     visualize_continuous_signal(output_indices,output_values)
     print("Output Values:", output_values)
     #CompareSignal("task5files/Conv_output.txt",output_indices,output_values)
-    Compare_Signals(r"FIR test cases/Testcase 6/ecg_band_pass_filtered.txt", output_indices, output_values)
+    Compare_Signals(r"FIR test cases/Testcase 7/BSFCoefficients.txt", output_indices, output_values)
     return
 
-def IDFT(frequency_domain_signal):
-    N = len(frequency_domain_signal)
-    idft_result = []
-    for n in range(N):
-        x_n = 0
-        for k in range(N):
-            x_n += frequency_domain_signal[k] * np.exp(2j * np.pi * k * n / N)
-        x_n /= N
-        idft_result.append(x_n)
-    return idft_result
+
+def DFT(signal):
+    signal2 = np.array(signal)
+    values = signal2  # Directly use the 1-dimensional array
+    N = len(values)
+    # DFT computation
+    X = np.zeros(N, dtype=complex)
+
+    for k in range(N):
+        for n in range(N):
+            X[k] += values[n] * np.exp(-2j * np.pi * k * n / N)
+
+    X = np.round(X, decimals=10)
+
+    return X
+def IDFT(X):
+    N = len(X)  # Length of the signal
+    x_reconstructed = np.zeros(N, dtype=complex)
+
+    # Perform IDFT
+    for k in range(N):
+        for n in range(N):
+            x_reconstructed[n] += X[k] * np.exp(2j * np.pi * k * n / N)
+
+    # Scale by 1/N
+    x_reconstructed /= N
+    return x_reconstructed.real
 
 def FastConvolution():
-    global sample_indices2 , sample_values2, sample_indices1,sample_values1
-    N1 = len(sample_indices1)
-    N2 = len(sample_indices2)
-    N = N1 + N2 - 1
-    signal1 = np.pad(sample_indices1, (0, N - N1))
-    signal2 = np.pad(sample_indices2, (0, N - N2))
+    global sample_indices1, sample_values1, sample_indices2, sample_values2
 
-    signal1_dft = dft(signal1)
-    signal2_dft = dft(signal2)
-    convolution_freq_domain = [a * b for a, b in zip(signal1_dft, signal2_dft)]
+    # Extract signal values
+    signal_values = np.array(sample_values1)
+    h_values = np.array(sample_values2)
+
+    # Get lengths
+    N1 = len(signal_values)
+    N2 = len(h_values)
+    padded_length = N1 + N2 - 1  # Length of the convolution result
+
+    # Pad signals to prevent circular convolution
+    signal_padded = np.pad(signal_values, (0, padded_length - N1))
+    h_padded = np.pad(h_values, (0, padded_length - N2))
+
+    # Perform FFT convolution
+    signal_fft = DFT(signal_padded)
+    h_fft = DFT(h_padded)
+    convolution_freq_domain = signal_fft * h_fft
     convolution_time_domain = IDFT(convolution_freq_domain)
 
-    convolution_indices = sample_indices1[0] + sample_indices2[0] + np.arange(N)
-    convolution_samples_real = [x.real for x in convolution_time_domain]
+    # Round the real part of the result to 8 decimal places
+    convolution_time_domain_rounded = [round(x.real, 8) for x in convolution_time_domain]
 
-    # ConvTest(convolution_indices, convolution_samples_real)
-    # plot_signals_convolution(indices_signal1, samples_signal1, indices_signal2, samples_signal2, convolution_indices,
-    #                          convolution_samples_real)
-    return convolution_indices, convolution_samples_real
-
+    # Compute indices for the convolution result
+    convolution_indices = np.arange(
+        sample_indices1[0] + sample_indices2[0],
+        sample_indices1[0] + sample_indices2[0] + padded_length
+    )
+    print("Convolution Indices:", convolution_indices)
+    print("Convolution Samples (Rounded with np.round):", convolution_time_domain_rounded)
+    # Return indices and rounded samples
+    return convolution_indices, convolution_time_domain_rounded
 
 def generate_filter():
     global filter_type, fs_entry, fc_entry, transition_band_entry, attenuation_entry
@@ -286,8 +318,8 @@ def generate_filter():
     global sample_indices2 , sample_values2
     sample_indices2 = filter_index
     sample_values2 = multiplied_signal
-    #final_indices,final_values2 = FastConvolution()
-    Compare_Signals(r"FIR test cases/Testcase 5/BPFCoefficients.txt", sample_indices2, sample_values2)
+    final_indices,final_values2 = FastConvolution()
+    Compare_Signals(r"FIR test cases/Testcase 2/ecg_low_pass_filtered.txt", final_indices, final_indices)
     #convolve()
     #print(multiplied_signal)
     #print(filter_index)
@@ -467,6 +499,7 @@ def calculate_correlation():
 
     result = []
 
+    #calculate p12_denominator
     x1_square = [i ** 2 for i in signalvalues]
     x2_square = [i ** 2 for i in signalvalues2]
     p12_denominator = math.sqrt((sum(x1_square) * sum(x2_square))) / N
